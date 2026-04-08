@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { MeasurementDef, MeasurementValue } from '@/types/customer';
 import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
+import bodySvg from '@/assets/body-silhouette-themed.svg';
 
 interface BodySilhouetteProps {
   measurements: MeasurementValue[];
@@ -47,6 +47,11 @@ const BodySilhouette: React.FC<BodySilhouetteProps> = ({
     return measurements.find((m) => m.key === key)?.value;
   };
 
+  // SVG viewBox is 425x333 — measurement points use position[0]*2, position[1]*4
+  // We scale those to fit the 425x333 space: x * (425/200), y * (333/430)
+  const scaleX = 425 / 200;
+  const scaleY = 333 / 430;
+
   return (
     <div className="relative w-full rounded-2xl bg-card overflow-hidden border border-border" style={{ minHeight: 420 }}>
       {/* Controls */}
@@ -83,7 +88,7 @@ const BodySilhouette: React.FC<BodySilhouetteProps> = ({
         onPointerLeave={handlePointerUp}
       >
         <svg
-          viewBox="0 0 200 400"
+          viewBox="0 0 425 333"
           className="w-full h-full"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
@@ -91,34 +96,23 @@ const BodySilhouette: React.FC<BodySilhouetteProps> = ({
             transition: isDragging ? 'none' : 'transform 0.3s ease',
           }}
         >
-          {/* Body silhouette */}
-          <g fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.2" opacity="0.5">
-            {/* Head */}
-            <ellipse cx="100" cy="30" rx="16" ry="20" />
-            {/* Neck */}
-            <path d="M92 50 L92 58 L108 58 L108 50" />
-            {/* Torso */}
-            <path d="M72 58 Q68 62 65 80 Q62 100 64 120 Q66 140 72 155 L128 155 Q134 140 136 120 Q138 100 135 80 Q132 62 128 58 Z" />
-            {/* Left arm */}
-            <path d="M72 58 Q58 65 48 90 Q42 110 36 135 Q34 145 38 148 Q42 150 44 145 Q48 130 52 115 Q56 100 60 90" />
-            {/* Right arm */}
-            <path d="M128 58 Q142 65 152 90 Q158 110 164 135 Q166 145 162 148 Q158 150 156 145 Q152 130 148 115 Q144 100 140 90" />
-            {/* Left leg */}
-            <path d="M72 155 Q70 160 72 200 Q74 240 76 280 Q78 320 76 350 Q75 360 80 362 Q85 360 84 350 Q82 320 84 280 Q86 240 88 200 Q90 175 95 155" />
-            {/* Right leg */}
-            <path d="M128 155 Q130 160 128 200 Q126 240 124 280 Q122 320 124 350 Q125 360 120 362 Q115 360 116 350 Q118 320 116 280 Q114 240 112 200 Q110 175 105 155" />
-          </g>
+          {/* Professional body silhouette — from export45.svg */}
+          <image
+            href={bodySvg}
+            x="0"
+            y="0"
+            width="425"
+            height="333"
+            style={{ opacity: 0.75 }}
+            className="[filter:invert(1)_sepia(1)_saturate(0)_hue-rotate(0deg)] dark:[filter:none]"
+          />
 
           {/* Measurement guide lines */}
-          <g stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="3 3" opacity="0.3">
-            {/* Shoulder line */}
-            <line x1="65" y1="62" x2="135" y2="62" />
-            {/* Chest line */}
-            <line x1="62" y1="90" x2="138" y2="90" />
-            {/* Waist line */}
-            <line x1="64" y1="125" x2="136" y2="125" />
-            {/* Hip line */}
-            <line x1="70" y1="155" x2="130" y2="155" />
+          <g stroke="hsl(var(--primary))" strokeWidth="0.6" strokeDasharray="4 3" opacity="0.35">
+            <line x1="95" y1="62" x2="330" y2="62" />
+            <line x1="85" y1="100" x2="340" y2="100" />
+            <line x1="95" y1="130" x2="330" y2="130" />
+            <line x1="88" y1="158" x2="337" y2="158" />
           </g>
 
           {/* Measurement points */}
@@ -126,6 +120,8 @@ const BodySilhouette: React.FC<BodySilhouetteProps> = ({
             const value = getMeasurementValue(def.key);
             const isActive = activePoint === def.key;
             const hasValue = value !== undefined;
+            const cx = def.position[0] * 2 * scaleX;
+            const cy = def.position[1] * 4 * scaleY;
 
             return (
               <g
@@ -136,66 +132,59 @@ const BodySilhouette: React.FC<BodySilhouetteProps> = ({
                 }}
                 className="cursor-pointer"
               >
-                {/* Glow ring */}
                 {isActive && (
                   <circle
-                    cx={def.position[0] * 2}
-                    cy={def.position[1] * 4}
-                    r="10"
+                    cx={cx}
+                    cy={cy}
+                    r="14"
                     fill="none"
                     stroke="hsl(var(--primary))"
-                    strokeWidth="0.8"
+                    strokeWidth="1"
                     opacity="0.4"
                   >
-                    <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="r" values="10;16;10" dur="2s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite" />
                   </circle>
                 )}
-
-                {/* Point */}
                 <circle
-                  cx={def.position[0] * 2}
-                  cy={def.position[1] * 4}
-                  r={isActive ? 5 : 3.5}
+                  cx={cx}
+                  cy={cy}
+                  r={isActive ? 7 : 5}
                   fill={hasValue ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
                   stroke={isActive ? 'hsl(var(--secondary))' : 'hsl(var(--background))'}
-                  strokeWidth="1.5"
+                  strokeWidth="2"
                   opacity={isActive ? 1 : 0.8}
                 />
-
-                {/* Value label */}
                 {hasValue && (
                   <>
                     <rect
-                      x={def.position[0] * 2 + 7}
-                      y={def.position[1] * 4 - 7}
-                      width={value.toString().length * 6 + 16}
-                      height="14"
-                      rx="4"
+                      x={cx + 10}
+                      y={cy - 9}
+                      width={value.toString().length * 7 + 20}
+                      height="18"
+                      rx="5"
                       fill={isActive ? 'hsl(var(--primary))' : 'hsl(var(--foreground))'}
                       opacity={isActive ? 1 : 0.85}
                     />
                     <text
-                      x={def.position[0] * 2 + 10}
-                      y={def.position[1] * 4 + 1}
-                      fontSize="8"
+                      x={cx + 14}
+                      y={cy + 2}
+                      fontSize="10"
                       fill="hsl(var(--background))"
-                      fontFamily="Work Sans"
+                      fontFamily="Be Vietnam Pro"
                       fontWeight="500"
                     >
                       {value}cm
                     </text>
                   </>
                 )}
-
-                {/* Label on hover/active */}
                 {isActive && (
                   <text
-                    x={def.position[0] * 2}
-                    y={def.position[1] * 4 - 10}
-                    fontSize="7"
+                    x={cx}
+                    y={cy - 14}
+                    fontSize="9"
                     fill="hsl(var(--secondary))"
-                    fontFamily="Work Sans"
+                    fontFamily="Be Vietnam Pro"
                     fontWeight="600"
                     textAnchor="middle"
                   >
