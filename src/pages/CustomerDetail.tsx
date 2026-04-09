@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save, Calendar as CalendarIcon, Eye, List, StickyNote } from 'lucide-react';
 import BodySilhouette from '@/components/BodySilhouette';
+import BodyMeasurement3D from '@/components/BodyMeasurement3D';
 import MeasurementSlider from '@/components/MeasurementSlider';
 import MeasurementTable from '@/components/MeasurementTable';
 import FabricPhotos from '@/components/FabricPhotos';
@@ -61,6 +62,7 @@ const CustomerDetail: React.FC = () => {
   const [phone, setPhone] = useState(initial.phone);
   const [measurements, setMeasurements] = useState<MeasurementValue[]>(initial.measurements);
   const [activePoint, setActivePoint] = useState<string | null>(null);
+  const [view3D, setView3D] = useState(false);
   const [tab, setTab] = useState<Tab>('body');
   const [notes, setNotes] = useState(initial.notes);
   const [projectedDate, setProjectedDate] = useState(initial.projectedDate || '');
@@ -182,6 +184,22 @@ const CustomerDetail: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-4"
             >
+              {/* 2D / 3D toggle — 3D temporarily hidden */}
+              {/* <div className="flex gap-1 p-1 rounded-xl bg-muted w-fit">
+                <button
+                  onClick={() => setView3D(false)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${!view3D ? 'bg-card shadow text-foreground' : 'text-muted-foreground'}`}
+                >
+                  2D
+                </button>
+                <button
+                  onClick={() => setView3D(true)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${view3D ? 'bg-card shadow text-foreground' : 'text-muted-foreground'}`}
+                >
+                  3D
+                </button>
+              </div> */}
+
               <BodySilhouette
                 measurements={measurements}
                 definitions={MEASUREMENT_DEFINITIONS}
@@ -233,6 +251,7 @@ const CustomerDetail: React.FC = () => {
                 definitions={MEASUREMENT_DEFINITIONS}
                 onRowClick={handlePointClick}
                 activeKey={activePoint}
+                onMeasurementChange={updateMeasurement}
               />
             </motion.div>
           )}

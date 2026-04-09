@@ -30,11 +30,14 @@ const MeasurementSlider: React.FC<MeasurementSliderProps> = ({
     return 'hsl(var(--secondary))';
   };
 
+  const THUMB_RADIUS = 12; // half of w-6 (24px)
+
   const updateValue = useCallback(
     (clientX: number) => {
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const usable = rect.width - THUMB_RADIUS * 2;
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left - THUMB_RADIUS) / usable));
       const newValue = Math.round(definition.min + pct * range);
       onChange(newValue);
     },
@@ -106,8 +109,11 @@ const MeasurementSlider: React.FC<MeasurementSliderProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         >
-          {/* Track background */}
-          <div className="absolute inset-x-0 h-2 rounded-full bg-muted">
+          {/* Track background — inset by thumb radius so thumb never overflows */}
+          <div
+            className="absolute h-2 rounded-full bg-muted"
+            style={{ left: THUMB_RADIUS, right: THUMB_RADIUS }}
+          >
             {/* Filled portion */}
             <div
               className="absolute inset-y-0 left-0 rounded-full transition-all duration-75"
@@ -116,7 +122,6 @@ const MeasurementSlider: React.FC<MeasurementSliderProps> = ({
                 background: `linear-gradient(90deg, hsl(var(--primary)), ${getColorForValue(value)})`,
               }}
             />
-
             {/* Median marker */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-accent rounded-full"
@@ -124,10 +129,13 @@ const MeasurementSlider: React.FC<MeasurementSliderProps> = ({
             />
           </div>
 
-          {/* Thumb */}
+          {/* Thumb — positioned over the inset track */}
           <motion.div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-            style={{ left: `${percentage}%` }}
+            className="absolute top-1/2 -translate-y-1/2"
+            style={{
+              left: `calc(${THUMB_RADIUS}px + (100% - ${THUMB_RADIUS * 2}px) * ${percentage / 100})`,
+              translateX: '-50%',
+            }}
             animate={{ scale: isDragging ? 1.3 : 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
