@@ -187,7 +187,7 @@ function MeasurementLabel({
                 }}
                 onBlur={onEditDone}
                 onKeyDown={(e) => { if (e.key === 'Enter') onEditDone(); }}
-                className="w-14 text-center text-sm font-bold text-gray-800 outline-none border-none bg-transparent"
+                className="w-14 text-center text-sm font-bold text-gray-800 outline-none border-none bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <span className="text-xs text-gray-500">cm</span>
             </div>

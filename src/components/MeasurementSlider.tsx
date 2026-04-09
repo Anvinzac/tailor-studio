@@ -83,7 +83,7 @@ const MeasurementSlider: React.FC<MeasurementSliderProps> = ({
                   onChange(v);
                 }
               }}
-              className="w-14 text-right text-lg font-semibold bg-transparent border-none outline-none text-foreground font-body tabular-nums"
+              className="w-14 text-right text-lg font-semibold bg-transparent border-none outline-none text-foreground font-body tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               min={definition.min}
               max={definition.max}
             />
@@ -129,25 +129,27 @@ const MeasurementSlider: React.FC<MeasurementSliderProps> = ({
             />
           </div>
 
-          {/* Thumb — positioned over the inset track */}
-          <motion.div
-            className="absolute top-1/2 -translate-y-1/2"
+          {/* Thumb */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
             style={{
               left: `calc(${THUMB_RADIUS}px + (100% - ${THUMB_RADIUS * 2}px) * ${percentage / 100})`,
-              translateX: '-50%',
             }}
-            animate={{ scale: isDragging ? 1.3 : 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <div
-              className="w-6 h-6 rounded-full border-2 shadow-lg"
-              style={{
-                backgroundColor: getColorForValue(value),
-                borderColor: 'hsl(var(--background))',
-                boxShadow: isDragging ? `0 0 16px ${getColorForValue(value)}60` : undefined,
-              }}
-            />
-          </motion.div>
+            <motion.div
+              animate={{ scale: isDragging ? 1.3 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            >
+              <div
+                className="w-6 h-6 rounded-full border-2 shadow-lg"
+                style={{
+                  backgroundColor: getColorForValue(value),
+                  borderColor: 'hsl(var(--background))',
+                  boxShadow: isDragging ? `0 0 16px ${getColorForValue(value)}60` : undefined,
+                }}
+              />
+            </motion.div>
+          </div>
         </div>
       </div>
     </motion.div>
