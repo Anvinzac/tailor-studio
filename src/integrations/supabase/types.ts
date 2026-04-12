@@ -14,7 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+          projected_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string
+          phone?: string
+          projected_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string
+          phone?: string
+          projected_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fabric_samples: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          image_url: string | null
+          note: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          image_url?: string | null
+          note?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          image_url?: string | null
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fabric_samples_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      measurements: {
+        Row: {
+          customer_id: string
+          id: string
+          key: string
+          value: number
+        }
+        Insert: {
+          customer_id: string
+          id?: string
+          key: string
+          value: number
+        }
+        Update: {
+          customer_id?: string
+          id?: string
+          key?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurements_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
