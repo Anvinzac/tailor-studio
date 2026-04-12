@@ -1,45 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Save, Calendar as CalendarIcon, Eye, List, StickyNote } from 'lucide-react';
+import { ArrowLeft, Save, Calendar as CalendarIcon, Eye, List, StickyNote, Loader2 } from 'lucide-react';
 import BodySilhouette from '@/components/BodySilhouette';
-import BodyMeasurement3D from '@/components/BodyMeasurement3D';
 import MeasurementSlider from '@/components/MeasurementSlider';
 import MeasurementTable from '@/components/MeasurementTable';
 import FabricPhotos from '@/components/FabricPhotos';
-import { Customer, MeasurementValue, FabricSample, MEASUREMENT_DEFINITIONS } from '@/types/customer';
+import { MeasurementValue, FabricSample, MEASUREMENT_DEFINITIONS } from '@/types/customer';
+import { useCustomer, useSaveCustomer } from '@/hooks/useCustomers';
 import { toast } from 'sonner';
-
-// Demo data lookup
-const DEMO: Record<string, Customer> = {
-  '1': {
-    id: '1', name: 'Nguyễn Văn An', phone: '0901234567', avatar: null,
-    measurements: [
-      { key: 'co', value: 38 }, { key: 'vai', value: 45 }, { key: 'nguc', value: 96 },
-      { key: 'eo', value: 78 }, { key: 'lung', value: 43 },
-    ],
-    fabricSamples: [{ id: 'f1', imageUrl: null, note: 'Lụa xanh' }],
-    notes: 'Thích vải lụa, màu xanh đậm', projectedDate: '2026-04-20',
-    createdAt: '2026-04-01', updatedAt: '2026-04-05',
-  },
-  '2': {
-    id: '2', name: 'Trần Thị Bình', phone: '0912345678', avatar: null,
-    measurements: [{ key: 'co', value: 33 }, { key: 'vai', value: 40 }, { key: 'nguc', value: 88 }],
-    fabricSamples: [], notes: '', projectedDate: '2026-05-01',
-    createdAt: '2026-04-02', updatedAt: '2026-04-06',
-  },
-  '3': {
-    id: '3', name: 'Lê Minh Châu', phone: '0923456789', avatar: null,
-    measurements: [
-      { key: 'co', value: 40 }, { key: 'vai', value: 48 }, { key: 'nguc', value: 102 },
-      { key: 'eo', value: 90 }, { key: 'mong', value: 100 }, { key: 'bap_tay', value: 34 },
-      { key: 'co_tay', value: 18 }, { key: 'lung', value: 45 }, { key: 'dai_tay', value: 60 },
-      { key: 'chan', value: 105 }, { key: 'dui', value: 58 }, { key: 'bap_chan', value: 38 },
-    ],
-    fabricSamples: [], notes: 'Đặt bộ vest cưới', projectedDate: '2026-04-15',
-    createdAt: '2026-03-28', updatedAt: '2026-04-08',
-  },
-};
 
 type Tab = 'body' | 'table' | 'extras';
 
@@ -48,25 +17,31 @@ const CustomerDetail: React.FC = () => {
   const navigate = useNavigate();
   const isNew = id === 'new';
 
-  const initial = isNew
-    ? {
-        id: 'new', name: '', phone: '', avatar: null,
-        measurements: [] as MeasurementValue[],
-        fabricSamples: [] as FabricSample[],
-        notes: '', projectedDate: null,
-        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-      }
-    : DEMO[id || ''] || DEMO['1'];
+  const { data: customer, isLoading } = useCustomer(id);
+  const saveCustomer = useSaveCustomer();
 
-  const [name, setName] = useState(initial.name);
-  const [phone, setPhone] = useState(initial.phone);
-  const [measurements, setMeasurements] = useState<MeasurementValue[]>(initial.measurements);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [measurements, setMeasurements] = useState<MeasurementValue[]>([]);
   const [activePoint, setActivePoint] = useState<string | null>(null);
-  const [view3D, setView3D] = useState(false);
   const [tab, setTab] = useState<Tab>('body');
-  const [notes, setNotes] = useState(initial.notes);
-  const [projectedDate, setProjectedDate] = useState(initial.projectedDate || '');
-  const [fabricSamples, setFabricSamples] = useState<FabricSample[]>(initial.fabricSamples);
+  const [notes, setNotes] = useState('');
+  const [projectedDate, setProjectedDate] = useState('');
+  const [fabricSamples, setFabricSamples] = useState<FabricSample[]>([]);
+  const [initialized, setInitialized] = useState(isNew);
+
+  // Populate form when customer data loads
+  useEffect(() => {
+    if (customer && !initialized) {
+      setName(customer.name);
+      setPhone(customer.phone);
+      setMeasurements(customer.measurements);
+      setNotes(customer.notes);
+      setProjectedDate(customer.projectedDate || '');
+      setFabricSamples(customer.fabricSamples);
+      setInitialized(true);
+    }
+  }, [customer, initialized]);
 
   const getMeasurementValue = (key: string) =>
     measurements.find((m) => m.key === key)?.value ??
@@ -89,8 +64,29 @@ const CustomerDetail: React.FC = () => {
     setTab('body');
   };
 
-  const handleSave = () => {
-    toast.success('Đã lưu thông tin khách hàng!');
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error('Vui lòng nhập tên khách hàng');
+      return;
+    }
+    try {
+      const customerId = await saveCustomer.mutateAsync({
+        id: isNew ? undefined : id,
+        isNew,
+        name,
+        phone,
+        notes,
+        projectedDate,
+        measurements,
+        fabricSamples,
+      });
+      toast.success('Đã lưu thông tin khách hàng!');
+      if (isNew) {
+        navigate(`/customer/${customerId}`, { replace: true });
+      }
+    } catch (e) {
+      toast.error('Lỗi khi lưu. Vui lòng thử lại.');
+    }
   };
 
   const addFabricSample = () => {
@@ -116,6 +112,14 @@ const CustomerDetail: React.FC = () => {
     { key: 'extras', icon: <StickyNote className="w-4 h-4" />, label: 'Chi tiết' },
   ];
 
+  if (!isNew && isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
@@ -127,14 +131,14 @@ const CustomerDetail: React.FC = () => {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-background/20 backdrop-blur-sm text-primary-foreground text-sm font-medium"
+            disabled={saveCustomer.isPending}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-background/20 backdrop-blur-sm text-primary-foreground text-sm font-medium disabled:opacity-50"
           >
-            <Save className="w-4 h-4" />
+            {saveCustomer.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Lưu
           </motion.button>
         </div>
 
-        {/* Customer info */}
         <div className="space-y-3">
           <input
             type="text"
@@ -184,22 +188,6 @@ const CustomerDetail: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-4"
             >
-              {/* 2D / 3D toggle — 3D temporarily hidden */}
-              {/* <div className="flex gap-1 p-1 rounded-xl bg-muted w-fit">
-                <button
-                  onClick={() => setView3D(false)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${!view3D ? 'bg-card shadow text-foreground' : 'text-muted-foreground'}`}
-                >
-                  2D
-                </button>
-                <button
-                  onClick={() => setView3D(true)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${view3D ? 'bg-card shadow text-foreground' : 'text-muted-foreground'}`}
-                >
-                  3D
-                </button>
-              </div> */}
-
               <BodySilhouette
                 measurements={measurements}
                 definitions={MEASUREMENT_DEFINITIONS}
@@ -207,12 +195,8 @@ const CustomerDetail: React.FC = () => {
                 activePoint={activePoint}
               />
 
-              {/* Active measurement slider */}
               {activePoint && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                   <MeasurementSlider
                     definition={MEASUREMENT_DEFINITIONS.find((d) => d.key === activePoint)!}
                     value={getMeasurementValue(activePoint)}
@@ -222,7 +206,6 @@ const CustomerDetail: React.FC = () => {
                 </motion.div>
               )}
 
-              {/* All measurement sliders */}
               <div className="space-y-2">
                 <h3 className="text-lg font-heading text-foreground">Tất cả số đo</h3>
                 {MEASUREMENT_DEFINITIONS.map((def) => (
@@ -264,7 +247,6 @@ const CustomerDetail: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
-              {/* Fabric Photos */}
               <FabricPhotos
                 samples={fabricSamples}
                 onAdd={addFabricSample}
@@ -273,7 +255,6 @@ const CustomerDetail: React.FC = () => {
                 onImageUpload={handleImageUpload}
               />
 
-              {/* Notes */}
               <div className="space-y-2">
                 <h3 className="text-lg font-heading text-foreground">Yêu cầu thêm</h3>
                 <textarea
@@ -285,7 +266,6 @@ const CustomerDetail: React.FC = () => {
                 />
               </div>
 
-              {/* Projected Date */}
               <div className="space-y-2">
                 <h3 className="text-lg font-heading text-foreground">Ngày dự kiến giao</h3>
                 <div className="relative">
